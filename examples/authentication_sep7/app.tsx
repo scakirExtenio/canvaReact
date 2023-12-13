@@ -26,11 +26,14 @@ const checkAuthenticationStatus = async (
    */
   try {
     const token = await auth.getCanvaUserToken();
+    
     const res = await fetch(AUTHENTICATION_CHECK_URL, {
       headers: {
         Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json', // Set the content type to JSON
       },
       method: "POST",
+      body: JSON.stringify({ token })
     });
     const body = await res.json();
 
@@ -94,21 +97,6 @@ export const App = () => {
   return (
     <div className={styles.scrollContainer}>
       <Rows spacing="3u">
-        <Text>
-          This example demonstrates how apps can allow users to authenticate
-          with the app via a third-party platform.
-        </Text>
-        <Text>
-          To set up please see the README.md in the /examples/authentication
-          folder
-        </Text>
-        <Rows spacing="1u">
-          <Title size="small">Try the authentication flow</Title>
-          <Text size="small" tone="tertiary">
-            To test the authentication flow, click the button below. The
-            username is "username" and the password is "password".
-          </Text>
-        </Rows>
         <Box>
           <Text alignment="center">{createAuthenticationMessage(state)}</Text>
         </Box>
@@ -118,8 +106,15 @@ export const App = () => {
           disabled={state === "authenticated" || state === "checking"}
           stretch
         >
-          Start authentication flow
+          Start connecting to Sep7
         </Button>
+        
+        {state !== "authenticated" && (
+          <Text>
+            If you are not authenticated, it means that you have not connected your Sep7 account with Canva. 
+            Please click the button to proceed with the login/acceptance of the connection process.
+          </Text>
+        )}
       </Rows>
     </div>
   );
