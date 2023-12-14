@@ -3,6 +3,7 @@ import { AppUiProvider } from "@canva/app-ui-kit";
 import { createRoot } from "react-dom/client";
 import { App } from "./app";
 import "@canva/app-ui-kit/styles.css";
+import './app.css'; // Import the CSS file
 
 const root = createRoot(document.getElementById("root")!);
 function render() {

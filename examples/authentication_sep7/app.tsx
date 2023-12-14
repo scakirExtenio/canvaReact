@@ -3,6 +3,7 @@ import { auth } from "@canva/user";
 import { Box, Button, Rows, Text, Title } from "@canva/app-ui-kit";
 import React from "react";
 import styles from "styles/components.css";
+import UserUploads from "./UserUploads";
 
 type State = "authenticated" | "not_authenticated" | "checking" | "error";
 
@@ -115,6 +116,8 @@ export const App = () => {
             Please click the button to proceed with the login/acceptance of the connection process.
           </Text>
         )}
+
+        {state === "authenticated" && <UserUploads/>}
       </Rows>
     </div>
   );
