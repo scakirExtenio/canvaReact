@@ -5,6 +5,8 @@ import { DraggableVideo } from 'components/draggable_video';
 import { addNativeElement } from "@canva/design";
 import { upload } from "@canva/asset";
 import { Rows, Text, Title } from "@canva/app-ui-kit";
+import { DraggableAudio } from 'components/draggable_audio';
+import { AudioContextProvider } from 'components/audio_player';
 
 const getOrginalKeyFromFileKey = (key) => {
   const index_slash = key.lastIndexOf('/');
@@ -53,7 +55,7 @@ const uploadVideo = async (uploadData) => {
     id: uploadData._id,
     mimeType: uploadData.type,
     thumbnailImageUrl: `${DEFAULT_VIDEO_THUMBNAIL}`,
-    thumbnailVideoUrl: `${THUMBNAIL_S3BUCKET_URL}/${thumbnailKeyFromFileKey(uploadData.key)}`,
+    thumbnailVideoUrl: `${ORGINAL_S3BUCKET_URL}/${getOrginalKeyFromFileKey(uploadData.key)}`,
     type: "VIDEO",
     url: `${ORGINAL_S3BUCKET_URL}/${getOrginalKeyFromFileKey(uploadData.key)}`,
     width: 100,
@@ -61,6 +63,19 @@ const uploadVideo = async (uploadData) => {
   });
 
   return video;
+};
+
+const uploadAudio = async (uploadData) => {
+  const audio = await upload({
+    id: uploadData._id,
+    title: uploadData.title,
+    durationMs: 5,
+    mimeType: uploadData.type,
+    type: "AUDIO", 
+    url: `${ORGINAL_S3BUCKET_URL}/${getOrginalKeyFromFileKey(uploadData.key)}`,
+  });
+
+  return audio;
 };
 
 const insertExternalImage = async (upload) => {
@@ -111,28 +126,47 @@ const UserUploads = () => {
   return (
     <div>
       <h2>User Uploads</h2>
-      <div id="library" style={{ display: 'flex', flexWrap: 'wrap' }}>
+      <div id="library" style={{ display: 'flex', flexWrap: 'wrap'}}>
           {uploads.map((upload) => (
-            <div key={upload._id} id="libraryParent" style={{ flex: '1 1 150px'}}>
+            <div key={upload._id} id="libraryParent" style={{ display: 'flex', flexWrap: 'wrap', width: '50%', justifyContent: 'center',}}>
                 {upload.type.startsWith('video/') ? (
-                  <DraggableVideo
-                    thumbnailVideoSrc={`${DEFAULT_VIDEO_THUMBNAIL}`}
-                    onClick={() => insertExternalImage(upload)}
-                    style={{ width: '100%'}}
-                    resolveVideoRef={() => uploadImage(upload)}
-                    mimeType={upload.type}
-                    fullSize={{
-                      width: 50,
-                      height: 50,
-                    }}
-                  />
+                  <div style={{ maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: '0.5rem', justifyContent: 'center', alignItems: 'center'}}>
+                    <DraggableVideo
+                      thumbnailImageSrc={`${DEFAULT_VIDEO_THUMBNAIL}`}
+                      onClick={() => insertExternalImage(upload)}
+                      style={{ width: '100px', height: '100px', objectFit: 'scale-down', justifyContent: 'center', alignItems: 'center' }}
+                      resolveVideoRef={() => uploadVideo(upload)}
+                      mimeType={upload.type}
+                      fullSize={{
+                        width: 50,
+                        height: 50,
+                      }}
+                    />
+                    <span style={{ width: '40%', color: 'white', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden', padding: '0.5rem 1.5rem 0.5rem 1.5rem'}}>{upload.title}</span>
+                  </div>
+                ) : upload.type.startsWith('audio/') ? (
+                  <div style={{ maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: '0.5rem', justifyContent: 'center', alignItems: 'center'}}>
+                    <AudioContextProvider>
+                      <DraggableAudio 
+                        resolveAudioRef={() => uploadAudio(upload)}
+                        title={upload.title}
+                        durationMs={5}
+                        previewUrl={`${ORGINAL_S3BUCKET_URL}/${getOrginalKeyFromFileKey(upload.key)}`}
+                        style={{ width: '100px', height: '100px', maxWidth: '130px', objectFit: 'scale-down', justifyContent: 'center', alignItems: 'center'}}
+                      />
+                    </AudioContextProvider>
+                    <span style={{ width: '40%', color: 'white', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden', padding: '0.5rem 1.5rem 0.5rem 1.5rem'}}>{upload.title}</span>
+                   </div>
                 ) : (
-                  <DraggableImage
-                    src={`${ORGINAL_S3BUCKET_URL}/${getOrginalKeyFromFileKey(upload.key)}`}
-                    onClick={() => insertExternalImage(upload)}
-                    resolveImageRef={() => uploadImage(upload)}
-                    style={{ width: '100%' }}
-                  />
+                  <div style={{ maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: '0.5rem', justifyContent: 'center', alignItems: 'center'}}>
+                    <DraggableImage
+                      src={`${ORGINAL_S3BUCKET_URL}/${getOrginalKeyFromFileKey(upload.key)}`}
+                      onClick={() => insertExternalImage(upload)}
+                      resolveImageRef={() => uploadImage(upload)}
+                      style={{ width: '100px', height: '100px', maxWidth: '130px', objectFit: 'scale-down', justifyContent: 'center', alignItems: 'center' }}
+                    />
+                    <span style={{ width: '40%', color: 'white', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden', padding: '0.5rem 1.5rem 0.5rem 1.5rem'}}>{upload.title}</span>
+                  </div>
                 )}
             </div>
           ))}
