@@ -186,12 +186,6 @@ export const App = () => {
             Start connecting to Sep7
           </Button>
         )}
-
-        {state == "authenticated" && (
-          <Button variant="secondary" onClick={removeUserConnectionSep7} stretch>
-            Remove connection of Canva from sep7 Account
-          </Button>
-        )}
         
         {state !== "authenticated" && (
           <Text>
@@ -208,6 +202,12 @@ export const App = () => {
 
             <UserUploads/>
           </>
+        )}
+
+        {state == "authenticated" && (
+          <Button variant="secondary" onClick={removeUserConnectionSep7} stretch>
+            Remove connection of Canva from sep7 Account
+          </Button>
         )}
       </Rows>
     </div>
