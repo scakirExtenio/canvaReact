@@ -19,151 +19,149 @@ const chalk = require("chalk");
  * @returns {Object}
  */
 function buildConfig({
-  devConfig,
-  appEntry = path.join(__dirname, "src", "index.tsx"),
-  backendHost = process.env.CANVA_BACKEND_HOST,
+	devConfig,
+	appEntry = path.join(__dirname, "src", "index.tsx"),
+	backendHost = process.env.CANVA_BACKEND_HOST,
+	s3Bucket = process.env.CANVA_ORGINAL_S3BUCKET_URL,
+	s3BucketThumbnail = process.env.CANVA_THUMBNAIL_S3BUCKET_URL,
+	videoThumbnail = process.env.CANVA_DEFAULT_VIDEO_THUMBNAIL,
 } = {}) {
-  const mode = devConfig ? "development" : "production";
+	const mode = devConfig ? "development" : "production";
 
-  if (!backendHost) {
-    console.error(
-      chalk.redBright.bold("BACKEND_HOST is undefined."),
-      `Refer to "Customizing the backend host" in the README.md for more information.`
-    );
-    process.exit(-1);
-  } else if (backendHost.includes("localhost") && mode === "production") {
-    console.error(
-      chalk.redBright.bold(
-        "BACKEND_HOST should not be set to localhost for production builds!"
-      ),
-      `Refer to "Customizing the backend host" in the README.md for more information.`
-    );
-  }
+	if (!backendHost) {
+		console.error(chalk.redBright.bold("BACKEND_HOST is undefined."), `Refer to "Customizing the backend host" in the README.md for more information.`);
+		process.exit(-1);
+	} else if (backendHost.includes("localhost") && mode === "production") {
+		console.error(chalk.redBright.bold("BACKEND_HOST should not be set to localhost for production builds!"), `Refer to "Customizing the backend host" in the README.md for more information.`);
+	}
 
-  return {
-    mode,
-    context: path.resolve(__dirname, "./"),
-    entry: {
-      app: appEntry,
-    },
-    target: "web",
-    resolve: {
-      alias: {
-        assets: path.resolve(__dirname, "assets"),
-        components: path.resolve(__dirname, "components"),
-        utils: path.resolve(__dirname, "utils"),
-        styles: path.resolve(__dirname, "styles"),
-        src: path.resolve(__dirname, "src"),
-      },
-      extensions: [".ts", ".tsx", ".js", ".css", ".svg", ".woff", ".woff2"],
-    },
-    infrastructureLogging: {
-      level: "none",
-    },
-    module: {
-      rules: [
-        {
-          test: /\.tsx?$/,
-          exclude: /node_modules/,
-          use: [
-            {
-              loader: "ts-loader",
-              options: {
-                transpileOnly: true,
-              },
-            },
-          ],
-        },
-        {
-          test: /\.css$/,
-          exclude: /node_modules/,
-          use: [
-            "style-loader",
-            {
-              loader: "css-loader",
-              options: {
-                modules: true,
-              },
-            },
-            {
-              loader: "postcss-loader",
-              options: {
-                postcssOptions: {
-                  plugins: [require("cssnano")({ preset: "default" })],
-                },
-              },
-            },
-          ],
-        },
-        {
-          test: /\.(png|jpg|jpeg)$/i,
-          type: "asset/inline",
-        },
-        {
-          test: /\.(woff|woff2)$/,
-          type: "asset/inline",
-        },
-        {
-          test: /\.svg$/,
-          oneOf: [
-            {
-              issuer: /\.[jt]sx?$/,
-              resourceQuery: /react/, // *.svg?react
-              use: ["@svgr/webpack", "url-loader"],
-            },
-            {
-              type: "asset/resource",
-              parser: {
-                dataUrlCondition: {
-                  maxSize: 200,
-                },
-              },
-            },
-          ],
-        },
-        {
-          test: /\.css$/,
-          include: /node_modules/,
-          use: [
-            "style-loader",
-            "css-loader",
-            {
-              loader: "postcss-loader",
-              options: {
-                postcssOptions: {
-                  plugins: [require("cssnano")({ preset: "default" })],
-                },
-              },
-            },
-          ],
-        },
-      ],
-    },
-    optimization: {
-      minimizer: [
-        new TerserPlugin({
-          terserOptions: {
-            format: {
-              // Turned on because emoji and regex is not minified properly using default
-              // https://github.com/facebook/create-react-app/issues/2488
-              ascii_only: true,
-            },
-          },
-        }),
-      ],
-    },
-    output: {
-      filename: `[name].js`,
-      path: path.resolve(__dirname, "dist"),
-      clean: true,
-    },
-    plugins: [
-      new DefinePlugin({
-        BACKEND_HOST: JSON.stringify(backendHost),
-      }),
-    ],
-    ...buildDevConfig(devConfig),
-  };
+	return {
+		mode,
+		context: path.resolve(__dirname, "./"),
+		entry: {
+			app: appEntry,
+		},
+		target: "web",
+		resolve: {
+			alias: {
+				assets: path.resolve(__dirname, "assets"),
+				components: path.resolve(__dirname, "components"),
+				utils: path.resolve(__dirname, "utils"),
+				styles: path.resolve(__dirname, "styles"),
+				src: path.resolve(__dirname, "src"),
+			},
+			extensions: [".ts", ".tsx", ".js", ".css", ".svg", ".woff", ".woff2"],
+		},
+		infrastructureLogging: {
+			level: "none",
+		},
+		module: {
+			rules: [
+				{
+					test: /\.tsx?$/,
+					exclude: /node_modules/,
+					use: [
+						{
+							loader: "ts-loader",
+							options: {
+								transpileOnly: true,
+							},
+						},
+					],
+				},
+				{
+					test: /\.css$/,
+					exclude: /node_modules/,
+					use: [
+						"style-loader",
+						{
+							loader: "css-loader",
+							options: {
+								modules: true,
+							},
+						},
+						{
+							loader: "postcss-loader",
+							options: {
+								postcssOptions: {
+									plugins: [require("cssnano")({ preset: "default" })],
+								},
+							},
+						},
+					],
+				},
+				{
+					test: /\.(png|jpg|jpeg)$/i,
+					type: "asset/inline",
+				},
+				{
+					test: /\.(woff|woff2)$/,
+					type: "asset/inline",
+				},
+				{
+					test: /\.svg$/,
+					oneOf: [
+						{
+							issuer: /\.[jt]sx?$/,
+							resourceQuery: /react/, // *.svg?react
+							use: ["@svgr/webpack", "url-loader"],
+						},
+						{
+							type: "asset/resource",
+							parser: {
+								dataUrlCondition: {
+									maxSize: 200,
+								},
+							},
+						},
+					],
+				},
+				{
+					test: /\.css$/,
+					include: /node_modules/,
+					use: [
+						"style-loader",
+						"css-loader",
+						{
+							loader: "postcss-loader",
+							options: {
+								postcssOptions: {
+									plugins: [require("cssnano")({ preset: "default" })],
+								},
+							},
+						},
+					],
+				},
+			],
+		},
+		optimization: {
+			minimizer: [
+				new TerserPlugin({
+					terserOptions: {
+						format: {
+							// Turned on because emoji and regex is not minified properly using default
+							// https://github.com/facebook/create-react-app/issues/2488
+							ascii_only: true,
+						},
+					},
+				}),
+			],
+		},
+		output: {
+			filename: `[name].js`,
+			path: path.resolve(__dirname, "dist"),
+			clean: true,
+		},
+		plugins: [
+			new DefinePlugin({
+				BACKEND_HOST: JSON.stringify(backendHost),
+				ORGINAL_S3BUCKET_URL: JSON.stringify(s3Bucket),
+				THUMBNAIL_S3BUCKET_URL: JSON.stringify(s3BucketThumbnail),
+				DEFAULT_VIDEO_THUMBNAIL: JSON.stringify(videoThumbnail),
+			}),
+		],
+		...buildDevConfig(devConfig),
+	};
 }
 
 /**
@@ -178,60 +176,58 @@ function buildConfig({
  * @returns {Object|null}
  */
 function buildDevConfig(options) {
-  if (!options) {
-    return null;
-  }
+	if (!options) {
+		return null;
+	}
 
-  const { port, enableHmr, appId, enableHttps, certFile, keyFile } = options;
+	const { port, enableHmr, appId, enableHttps, certFile, keyFile } = options;
 
-  let devServer = {
-    server: enableHttps
-      ? {
-          type: "https",
-          options: {
-            cert: certFile,
-            key: keyFile,
-          },
-        }
-      : "http",
-    host: "localhost",
-    historyApiFallback: {
-      rewrites: [{ from: /^\/$/, to: "/app.js" }],
-    },
-    port,
-    client: {
-      logging: "verbose",
-    },
-    static: {
-      directory: path.resolve(__dirname, "assets"),
-      publicPath: "/assets",
-    },
-  };
+	let devServer = {
+		server: enableHttps
+			? {
+					type: "https",
+					options: {
+						cert: certFile,
+						key: keyFile,
+					},
+			  }
+			: "http",
+		host: "localhost",
+		historyApiFallback: {
+			rewrites: [{ from: /^\/$/, to: "/app.js" }],
+		},
+		port,
+		client: {
+			logging: "verbose",
+		},
+		static: {
+			directory: path.resolve(__dirname, "assets"),
+			publicPath: "/assets",
+		},
+	};
 
-  if (enableHmr && appId) {
-    const appDomain = `app-${appId}.canva-apps.com`;
-    devServer = {
-      ...devServer,
-      allowedHosts: appDomain,
-      headers: {
-        "Access-Control-Allow-Origin": `https://${appDomain}`,
-        "Access-Control-Allow-Credentials": "true",
-        "Access-Control-Allow-Private-Network": "true",
-      },
-    };
-  } else {
-    if (enableHmr && !appId) {
-      console.warn(
-        "Attempted to enable HMR without supplying an App ID... Disabling HMR."
-      );
-    }
-    devServer.webSocketServer = false;
-  }
+	if (enableHmr && appId) {
+		const appDomain = `app-${appId}.canva-apps.com`;
+		devServer = {
+			...devServer,
+			allowedHosts: appDomain,
+			headers: {
+				"Access-Control-Allow-Origin": `https://${appDomain}`,
+				"Access-Control-Allow-Credentials": "true",
+				"Access-Control-Allow-Private-Network": "true",
+			},
+		};
+	} else {
+		if (enableHmr && !appId) {
+			console.warn("Attempted to enable HMR without supplying an App ID... Disabling HMR.");
+		}
+		devServer.webSocketServer = false;
+	}
 
-  return {
-    devtool: "source-map",
-    devServer,
-  };
+	return {
+		devtool: "source-map",
+		devServer,
+	};
 }
 
 module.exports = () => buildConfig();

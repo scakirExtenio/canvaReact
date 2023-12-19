@@ -4,6 +4,7 @@ import { DraggableImage } from 'components/draggable_image';
 import { DraggableVideo } from 'components/draggable_video';
 import { addNativeElement } from "@canva/design";
 import { upload } from "@canva/asset";
+import { Rows, Text, Title } from "@canva/app-ui-kit";
 
 const getOrginalKeyFromFileKey = (key) => {
   const index_slash = key.lastIndexOf('/');
@@ -27,20 +28,17 @@ const thumbnailKeyFromFileKey = (key) => {
   return key.substring(0, index_slash + 1) + 'thumbnail-sm' + extension;
 }
 
-const s3Bucket = "https://files-dev.sep7.tv";
-const s3BucketThumbnail = "https://thumbnails-dev.sep7.tv";
-const defaultVideoThumbnailSrc = "https://files-dev.sep7.tv/RsccfRmX6fXMzZ48k/2d11673150518611/original.jpeg"
+
+
 const uploadImage = async (uploadData) => {
-  console.log(uploadData.type);
-  
   const image = await upload({
     // An alphanumeric string that is unique for each asset. If given the same
     // id, the existing asset for that id will be used instead.
     id: uploadData._id,
     mimeType: uploadData.type,
-    thumbnailUrl: `${s3BucketThumbnail}/${thumbnailKeyFromFileKey(uploadData.key)}`,
+    thumbnailUrl: `${THUMBNAIL_S3BUCKET_URL}/${thumbnailKeyFromFileKey(uploadData.key)}`,
     type: "IMAGE",
-    url: `${s3Bucket}/${getOrginalKeyFromFileKey(uploadData.key)}`,
+    url: `${ORGINAL_S3BUCKET_URL}/${getOrginalKeyFromFileKey(uploadData.key)}`,
     width: 100,
     height: 100,
   });
@@ -54,10 +52,10 @@ const uploadVideo = async (uploadData) => {
     // id, the existing asset for that id will be used instead.
     id: uploadData._id,
     mimeType: uploadData.type,
-    thumbnailImageUrl: defaultVideoThumbnailSrc,
-    thumbnailVideoUrl: `${s3BucketThumbnail}/${thumbnailKeyFromFileKey(uploadData.key)}`,
+    thumbnailImageUrl: `${DEFAULT_VIDEO_THUMBNAIL}`,
+    thumbnailVideoUrl: `${THUMBNAIL_S3BUCKET_URL}/${thumbnailKeyFromFileKey(uploadData.key)}`,
     type: "VIDEO",
-    url: `${s3Bucket}/${getOrginalKeyFromFileKey(uploadData.key)}`,
+    url: `${ORGINAL_S3BUCKET_URL}/${getOrginalKeyFromFileKey(uploadData.key)}`,
     width: 100,
     height: 100,
   });
@@ -79,9 +77,9 @@ const insertExternalImage = async (upload) => {
   } 
 };
 
-const UserUploads = ({ canvaId }) => {
+const UserUploads = () => {
   const [uploads, setUploads] = useState([]);
-
+  
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -108,40 +106,36 @@ const UserUploads = ({ canvaId }) => {
     };
 
     fetchData();
-  }, [canvaId]);
+  }, []);
 
   return (
     <div>
       <h2>User Uploads</h2>
-      <div id="library">
-        {uploads.map((upload) => (
-          <div key={upload._id} style={{ marginRight: '10px', marginBottom: '10px', background: "#fff" }}>
-            {upload.type.startsWith('video/') ? (
-              <>
-                <span style={{ display: 'block', marginBottom: '5px' }}>🎥</span>
-                <div className="video-container" style={{ width: '100%', height: '100%'}}>
+      <div id="library" style={{ display: 'flex', flexWrap: 'wrap' }}>
+          {uploads.map((upload) => (
+            <div key={upload._id} id="libraryParent" style={{ flex: '1 1 150px'}}>
+                {upload.type.startsWith('video/') ? (
                   <DraggableVideo
-                    thumbnailVideoSrc={`${s3Bucket}/${getOrginalKeyFromFileKey(upload.key)}`}
+                    thumbnailVideoSrc={`${DEFAULT_VIDEO_THUMBNAIL}`}
                     onClick={() => insertExternalImage(upload)}
-                    resolveVideoRef={() => getImageRef(upload)}
+                    style={{ width: '100%'}}
+                    resolveVideoRef={() => uploadImage(upload)}
                     mimeType={upload.type}
+                    fullSize={{
+                      width: 50,
+                      height: 50,
+                    }}
                   />
-                  <div className="tooltip">{upload.title}</div>
-                </div>
-              </>
-            ) : (
-              <div className="image-container">
-                <DraggableImage
-                  src={`${s3Bucket}/${getOrginalKeyFromFileKey(upload.key)}`}
-                  style={{ width: "100%", height: "100%", borderRadius: "8px", background: "#fff", padding: "16px" }}
-                  onClick={() => insertExternalImage(upload)}
-                  resolveImageRef={() => getImageRef(upload)}
-                />
-                <div className="tooltip">{upload.title}</div>
-              </div>
-            )}
-          </div>
-        ))}
+                ) : (
+                  <DraggableImage
+                    src={`${ORGINAL_S3BUCKET_URL}/${getOrginalKeyFromFileKey(upload.key)}`}
+                    onClick={() => insertExternalImage(upload)}
+                    resolveImageRef={() => uploadImage(upload)}
+                    style={{ width: '100%' }}
+                  />
+                )}
+            </div>
+          ))}
       </div>
     </div>
   );

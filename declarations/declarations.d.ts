@@ -27,3 +27,6 @@ declare module "*.svg" {
 }
 
 declare const BACKEND_HOST: string;
+declare const ORGINAL_S3BUCKET_URL: string;
+declare const THUMBNAIL_S3BUCKET_URL: string;
+declare const DEFAULT_VIDEO_THUMBNAIL: string;

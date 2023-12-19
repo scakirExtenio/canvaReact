@@ -1,10 +1,10 @@
 import type { Authentication } from "@canva/user";
 import { auth } from "@canva/user";
-import { Box, Button, Rows, Text, Title } from "@canva/app-ui-kit";
-import React from "react";
+import { Box, Button, Rows, Text } from "@canva/app-ui-kit";
+import React, { useState } from "react";
 import styles from "styles/components.css";
 import UserUploads from "./UserUploads";
-
+import { requestExport, ExportResponse } from "@canva/design";
 type State = "authenticated" | "not_authenticated" | "checking" | "error";
 
 /**
@@ -52,6 +52,8 @@ const checkAuthenticationStatus = async (
 export const App = () => {
   // Keep track of the user's authentication status.
   const [state, setState] = React.useState<State>("checking");
+  const [exportState, setExportState] = useState<"exporting" | "idle">("idle");
+  const [exportResponse, setExportResponse] = useState<ExportResponse | undefined>();
 
   React.useEffect(() => {
     checkAuthenticationStatus(auth).then((status) => {
@@ -82,6 +84,83 @@ export const App = () => {
     }
   };
 
+  const exportDocument = async () => {
+    if (exportState === "exporting") return;
+    try {
+      setExportState("exporting");
+
+      const response = await requestExport({
+        acceptedFileTypes: [
+          "PNG",
+          "PDF_STANDARD",
+          "JPG",
+          "GIF",
+          //"SVG",
+          "VIDEO",
+          //"PPTX",
+        ],
+      });
+
+      setExportResponse(response);
+      
+      // Assuming `response` contains the Canva blob data
+      const canvaBlob = response; // Adjust based on your response structure
+      
+      // Send the Canva blob data to your custom endpoint
+      await sendCanvaBlobToBackend(canvaBlob);
+
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setExportState("idle");
+    }
+  };
+
+  const sendCanvaBlobToBackend = async (canvaBlob) => {
+    try {
+      const token = await auth.getCanvaUserToken();
+      
+      const res = await fetch(`${BACKEND_HOST}/api/canva/upload`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        method: "POST",
+        body: JSON.stringify({ exportBlobs: canvaBlob, token }),
+      });
+  
+      const body = await res.json();
+  
+      // Handle the response from your backend if needed
+      console.log("Response from backend:", body);
+    } catch (error) {
+      console.error("Error sending Canva blob to backend:", error);
+    }
+  };
+
+  const removeUserConnectionSep7 = async () => {
+    try {
+      const token = await auth.getCanvaUserToken();
+      
+      const res = await fetch(`${BACKEND_HOST}/configuration/delete`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        method: "POST",
+        body: JSON.stringify({ token }),
+      });
+      
+      const body = await res.json();
+  
+      // Handle the response from your backend if needed
+      console.log("Response from backend:", body);
+      setState("not_authenticated");
+    } catch (error) {
+      console.error("Error while removing Connection from sep7 Account", error);
+    }
+  };
+
   if (state === "error") {
     return (
       <div className={styles.scrollContainer}>
@@ -101,14 +180,18 @@ export const App = () => {
         <Box>
           <Text alignment="center">{createAuthenticationMessage(state)}</Text>
         </Box>
-        <Button
-          variant="primary"
-          onClick={startAuthenticationFlow}
-          disabled={state === "authenticated" || state === "checking"}
-          stretch
-        >
-          Start connecting to Sep7
-        </Button>
+
+        {state !== "authenticated" && (
+          <Button variant="primary" onClick={startAuthenticationFlow} disabled={state === "checking"} stretch>
+            Start connecting to Sep7
+          </Button>
+        )}
+
+        {state == "authenticated" && (
+          <Button variant="secondary" onClick={removeUserConnectionSep7} stretch>
+            Remove connection of Canva from sep7 Account
+          </Button>
+        )}
         
         {state !== "authenticated" && (
           <Text>
@@ -117,7 +200,15 @@ export const App = () => {
           </Text>
         )}
 
-        {state === "authenticated" && <UserUploads/>}
+        {state === "authenticated" && (
+          <>
+            <Button variant="primary" onClick={exportDocument} loading={exportState === "exporting"} stretch>
+              Export
+            </Button>
+
+            <UserUploads/>
+          </>
+        )}
       </Rows>
     </div>
   );
