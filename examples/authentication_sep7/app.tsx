@@ -206,7 +206,7 @@ export const App = () => {
 
         {state == "authenticated" && (
           <Button variant="secondary" onClick={removeUserConnectionSep7} stretch>
-            Remove connection of Canva from sep7 Account
+            Unlink Sep7 Account
           </Button>
         )}
       </Rows>

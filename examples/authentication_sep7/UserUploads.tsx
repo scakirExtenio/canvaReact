@@ -1,12 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth } from "@canva/user";
-import { DraggableImage } from 'components/draggable_image';
-import { DraggableVideo } from 'components/draggable_video';
-import { addNativeElement } from "@canva/design";
-import { upload } from "@canva/asset";
-import { Rows, Text, Title } from "@canva/app-ui-kit";
-import { DraggableAudio } from 'components/draggable_audio';
-import { AudioContextProvider } from 'components/audio_player';
+import { Button, Grid, Rows, Text, TextInput, Title } from "@canva/app-ui-kit";
+import MediaUploadList from './MediaUploadList';
 
 const getOrginalKeyFromFileKey = (key) => {
   const index_slash = key.lastIndexOf('/');
@@ -17,85 +12,27 @@ const getOrginalKeyFromFileKey = (key) => {
   return orginalKeyFromFileKey
 }
 
-const thumbnailKeyFromFileKey = (key) => {
-  const index_slash = key.lastIndexOf('/');
-  const index_dot = key.lastIndexOf('.');
-  let extension = key.substring(index_dot, key.length);
-  if ((extension === '.gif') || (extension === '.svg') || (extension === '.pdf')) {
-    // rewrite .gif (and .svg) to .png because thumbnails from .gif (and .svg) images are created in .png format
-    // rewrite .pdf to .png because thumbnails from .pdf files are created in .png format
-    extension = '.png';
-  }
-
-  return key.substring(0, index_slash + 1) + 'thumbnail-sm' + extension;
+const getAudioDuration = (url: string): Promise<number>  => {
+  return new Promise((resolve, reject) => {
+    let audio = new Audio();
+    audio.src = url;
+    audio.addEventListener('loadedmetadata', () => {
+      const durationInMilliseconds = parseFloat((audio.duration * 1000).toFixed(0)); // Convert to milliseconds
+      resolve(durationInMilliseconds); 
+      audio.srcObject = null;
+      audio = null;
+    });
+    audio.addEventListener('error', () => {
+      reject('Error loading audio');
+    });
+  });
 }
-
-
-
-const uploadImage = async (uploadData) => {
-  const image = await upload({
-    // An alphanumeric string that is unique for each asset. If given the same
-    // id, the existing asset for that id will be used instead.
-    id: uploadData._id,
-    mimeType: uploadData.type,
-    thumbnailUrl: `${THUMBNAIL_S3BUCKET_URL}/${thumbnailKeyFromFileKey(uploadData.key)}`,
-    type: "IMAGE",
-    url: `${ORGINAL_S3BUCKET_URL}/${getOrginalKeyFromFileKey(uploadData.key)}`,
-    width: 100,
-    height: 100,
-  });
-
-  return image;
-};
-
-const uploadVideo = async (uploadData) => {
-  const video = await upload({
-    // An alphanumeric string that is unique for each asset. If given the same
-    // id, the existing asset for that id will be used instead.
-    id: uploadData._id,
-    mimeType: uploadData.type,
-    thumbnailImageUrl: `${DEFAULT_VIDEO_THUMBNAIL}`,
-    thumbnailVideoUrl: `${ORGINAL_S3BUCKET_URL}/${getOrginalKeyFromFileKey(uploadData.key)}`,
-    type: "VIDEO",
-    url: `${ORGINAL_S3BUCKET_URL}/${getOrginalKeyFromFileKey(uploadData.key)}`,
-    width: 100,
-    height: 100,
-  });
-
-  return video;
-};
-
-const uploadAudio = async (uploadData) => {
-  const audio = await upload({
-    id: uploadData._id,
-    title: uploadData.title,
-    durationMs: 10,
-    mimeType: uploadData.type,
-    type: "AUDIO", 
-    url: `${ORGINAL_S3BUCKET_URL}/${getOrginalKeyFromFileKey(uploadData.key)}`,
-  });
-
-  return audio;
-};
-
-
-const insertExternalImage = async (upload) => {
-  if (upload.type.startsWith('image/')) {
-    const { ref } = await uploadImage(upload);
-
-    addNativeElement({ type: "IMAGE", ref });
-  } 
-
-  if (upload.type.startsWith('video/')) {
-    const { ref } = await uploadVideo(upload);
-
-    addNativeElement({ type: "VIDEO", ref });
-  } 
-};
 
 const UserUploads = () => {
   const [uploads, setUploads] = useState([]);
-  
+  const [searchTerm, setSearchTerm] = useState(''); // State to store the search term
+  const [activeTab, setActiveTab] = useState('all'); // New state for active tab
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -115,7 +52,22 @@ const UserUploads = () => {
         }
 
         const data = await response.json();
-        setUploads(data.uploads);
+
+        const uploadsWithDuration = await Promise.all(data.uploads.map(async (upload) => {
+          if (upload.type.startsWith('audio/')) {
+            try {
+              const durationMs = await getAudioDuration(`${ORGINAL_S3BUCKET_URL}/${getOrginalKeyFromFileKey(upload.key)}`);
+              return { ...upload, durationMs };
+            } catch (error) {
+              console.error('Error getting audio duration:', error);
+              return { ...upload, durationMs: null }; // or some default value
+            }
+          } else {
+            return upload;
+          }
+        }));
+
+        setUploads(uploadsWithDuration);
       } catch (error) {
         console.error('Error fetching user uploads:', error.message);
       }
@@ -124,54 +76,59 @@ const UserUploads = () => {
     fetchData();
   }, []);
 
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value.toLowerCase());
+  };
+
+  const filterUploadsByType = (type) => {
+    switch (type) {
+      case 'image':
+        return uploads.filter(upload => upload.type.startsWith('image/'));
+      case 'video':
+        return uploads.filter(upload => upload.type.startsWith('video/'));
+      case 'audio':
+        return uploads.filter(upload => upload.type.startsWith('audio/'));
+      default:
+        return uploads;
+    }
+  };
+
+  const sortUploadsByType = (uploads) => {
+    return uploads.slice().sort((a, b) => a.type.localeCompare(b.type));
+  };
+
+  const getUploads = () => {
+    return activeTab === 'all' ? sortUploadsByType(uploads) : filterUploadsByType(activeTab);
+  };
+
+  const filteredUploads = getUploads().filter(upload => 
+    upload.title.toLowerCase().includes(searchTerm)
+  );
+
+  const getButtonVariant = (tabName) => {
+    return activeTab === tabName ? "primary" : "secondary";
+  };
+
+
   return (
     <div>
-      <h2>User Uploads</h2>
-      <div id="library" style={{ display: 'flex', flexWrap: 'wrap'}}>
-          {uploads.map((upload) => (
-            <div key={upload._id} id="libraryParent" style={{ display: 'flex', flexWrap: 'wrap', width: '50%', justifyContent: 'center',}}>
-                {upload.type.startsWith('video/') ? (
-                  <div style={{ maxWidth: '100%', display: 'flex', flexDirection: 'column',  justifyContent: 'center', alignItems: 'center', padding: '1rem'}}>
-                    <DraggableVideo
-                      thumbnailImageSrc={`${DEFAULT_VIDEO_THUMBNAIL}`}
-                      onClick={() => insertExternalImage(upload)}
-                      style={{ width: '100px', height: '100px', objectFit: 'scale-down', justifyContent: 'center', alignItems: 'center' }}
-                      resolveVideoRef={() => uploadVideo(upload)}
-                      mimeType={upload.type}
-                      fullSize={{
-                        width: 50,
-                        height: 50,
-                      }}
-                    />
-                    <span style={{ width: '40%', color: 'white', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden', padding: '0.5rem 1.5rem 0.5rem 1.5rem'}}>{upload.title}</span>
-                  </div>
-                ) : upload.type.startsWith('audio/') ? (
-                  <div style={{ maxWidth: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}>
-                    <AudioContextProvider>
-                      <DraggableAudio 
-                        resolveAudioRef={() => uploadAudio(upload)}
-                        title={upload.title}
-                        durationMs={10}
-                        previewUrl={`${ORGINAL_S3BUCKET_URL}/${getOrginalKeyFromFileKey(upload.key)}`}
-                        style={{ width: '100px', height: '100px', maxWidth: '130px', objectFit: 'scale-down', justifyContent: 'center', alignItems: 'center'}}
-                      />
-                    </AudioContextProvider>
-                    <span style={{ width: '40%', color: 'white', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden', padding: '0.5rem 1.5rem 0.5rem 1.5rem'}}>{upload.title}</span>
-                   </div>
-                ) : (
-                  <div style={{ maxWidth: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}>
-                    <DraggableImage
-                      src={`${ORGINAL_S3BUCKET_URL}/${getOrginalKeyFromFileKey(upload.key)}`}
-                      onClick={() => insertExternalImage(upload)}
-                      resolveImageRef={() => uploadImage(upload)}
-                      style={{ width: '100px', height: '100px', maxWidth: '130px', objectFit: 'scale-down', justifyContent: 'center', alignItems: 'center' }}
-                    />
-                    <span style={{ width: '40%', color: 'white', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden', padding: '0.5rem 1.5rem 0.5rem 1.5rem'}}>{upload.title}</span>
-                  </div>
-                )}
-            </div>
-          ))}
-      </div>
+      <Title>User Uploads</Title>
+      <Rows spacing="2u">        
+          <TextInput 
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+          />
+          
+          <Grid columns={4} spacing="1.5u">
+            <Button onClick={() => setActiveTab('all')}   variant={getButtonVariant('all')}>All</Button>
+            <Button onClick={() => setActiveTab('image')} variant={getButtonVariant('image')}>Images</Button>
+            <Button onClick={() => setActiveTab('video')} variant={getButtonVariant('video')}>Videos</Button>
+            <Button onClick={() => setActiveTab('audio')} variant={getButtonVariant('audio')}>Audios</Button>
+          </Grid>
+
+          <MediaUploadList uploads={filteredUploads} />
+      </Rows>
     </div>
   );
 };
