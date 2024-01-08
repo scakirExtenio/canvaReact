@@ -5,7 +5,7 @@ import { DraggableAudio } from 'components/draggable_audio';
 import { AudioContextProvider } from 'components/audio_player';
 import { addNativeElement } from "@canva/design";
 import { upload } from "@canva/asset";
-import { Grid, Rows } from '@canva/app-ui-kit';
+import { Grid, Rows, Title } from '@canva/app-ui-kit';
 
 const getOrginalKeyFromFileKey = (key) => {
   const index_slash = key.lastIndexOf('/');
@@ -110,6 +110,7 @@ const MediaUploadItem = ({ upload }) => {
               resolveImageRef={() => uploadImage(upload)}
               style={{ width: '100px', height: '100px', maxWidth: '130px', objectFit: 'scale-down', justifyContent: 'center', alignItems: 'center' }}
             />
+            <span style={{ width: '100%', color: 'white', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden'}}>{upload.title}</span>
           </Rows>
         </div>
 
@@ -117,35 +118,36 @@ const MediaUploadItem = ({ upload }) => {
     case 'video':
       return (
         <div style={{ gridColumn: gridColumnSpan }}>
-        <Rows spacing='1u'>
-          <DraggableVideo
-              thumbnailImageSrc={`${DEFAULT_VIDEO_THUMBNAIL}`}
-              onClick={() => insertExternalImage(upload)}
-              style={{ width: '100px', height: '100px', objectFit: 'scale-down', justifyContent: 'center', alignItems: 'center' }}
-              resolveVideoRef={() => uploadVideo(upload)}
-              mimeType={upload.type}
-              fullSize={{
-                  width: 50,
-                  height: 50,
-              }}
-          />
-        </Rows>
+          <Rows spacing='1u'>
+            <DraggableVideo
+                thumbnailImageSrc={`${DEFAULT_VIDEO_THUMBNAIL}`}
+                onClick={() => insertExternalImage(upload)}
+                style={{ width: '100px', height: '100px', objectFit: 'scale-down', justifyContent: 'center', alignItems: 'center' }}
+                resolveVideoRef={() => uploadVideo(upload)}
+                mimeType={upload.type}
+                fullSize={{
+                    width: 50,
+                    height: 50,
+                }}
+            />
+            <span style={{ width: '100%', color: 'white', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden'}}>{upload.title}</span>
+          </Rows>
         </div>
       );
     case 'audio':
       return (
         <div style={{ gridColumn: gridColumnSpan }}>
-        <Rows spacing='1u'>
-          <AudioContextProvider>
-            <DraggableAudio
-              resolveAudioRef={() => uploadAudio(upload)}
-              title={upload.title}
-              durationMs={upload.durationMs}
-              previewUrl={`${ORGINAL_S3BUCKET_URL}/${getOrginalKeyFromFileKey(upload.key)}`}
-              style={{ width: '100px', height: '100px', maxWidth: '130px', objectFit: 'scale-down', justifyContent: 'center', alignItems: 'center'}}
-            />
-          </AudioContextProvider>
-        </Rows>
+          <Rows spacing='1u'>
+            <AudioContextProvider>
+              <DraggableAudio
+                resolveAudioRef={() => uploadAudio(upload)}
+                title={upload.title}
+                durationMs={upload.durationMs}
+                previewUrl={`${ORGINAL_S3BUCKET_URL}/${getOrginalKeyFromFileKey(upload.key)}`}
+                style={{ width: '100px', height: '100px', maxWidth: '130px', objectFit: 'scale-down', justifyContent: 'center', alignItems: 'center'}}
+              />
+            </AudioContextProvider>
+          </Rows>
         </div>
       );
     default:

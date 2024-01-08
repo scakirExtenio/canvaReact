@@ -112,7 +112,7 @@ const UserUploads = () => {
 
   return (
     <div>
-      <Title>User Uploads</Title>
+      <Title size='large'>User Uploads</Title>
       <Rows spacing="2u">        
           <TextInput 
               placeholder="Search..."
