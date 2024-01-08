@@ -159,7 +159,9 @@ const MediaUploadList = ({ uploads }) => {
   return (
     <Grid columns={3} spacing="1.5u">
       {uploads.map((upload) => (
+        <div key={upload._id}>
           <MediaUploadItem upload={upload} />
+        </div>
       ))}
     </Grid>
   );
