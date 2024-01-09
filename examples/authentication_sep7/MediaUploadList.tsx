@@ -98,11 +98,31 @@ const insertExternalImage = async (upload) => {
 const MediaUploadItem = ({ upload }) => {
   const gridColumnSpan = upload.type.startsWith('audio') ? '1 / -1' : 'auto';
 
+  // Initialize state to hold the original image dimensions
+  const [originalWidth, setOriginalWidth] = React.useState(null);
+  const [originalHeight, setOriginalHeight] = React.useState(null);
+
+  // Function to fetch original image dimensions
+  const fetchImageDimensions = () => {
+    const img = new Image();
+    img.onload = () => {
+      setOriginalWidth(img.width);
+      setOriginalHeight(img.height);
+    };
+    img.src = `${ORGINAL_S3BUCKET_URL}/${getOrginalKeyFromFileKey(upload.key)}`;
+  };
+
+  React.useEffect(() => {
+    if (upload.type.startsWith('image')) {
+      fetchImageDimensions();
+    }
+  }, [upload.type, upload.key]);
+
   // Determines how to render each upload based on its type
   switch (upload.type.split('/')[0]) {
     case 'image':
       return (
-        <div style={{ gridColumn: gridColumnSpan }}>
+        <div style={{ gridColumn: gridColumnSpan }} >
           <Rows spacing='1u'>
             <DraggableImage
               src={`${ORGINAL_S3BUCKET_URL}/${getOrginalKeyFromFileKey(upload.key)}`}
@@ -117,7 +137,7 @@ const MediaUploadItem = ({ upload }) => {
       );
     case 'video':
       return (
-        <div style={{ gridColumn: gridColumnSpan }}>
+        <div style={{ gridColumn: gridColumnSpan }} >
           <Rows spacing='1u'>
             <DraggableVideo
                 thumbnailImageSrc={`${DEFAULT_VIDEO_THUMBNAIL}`}
@@ -136,7 +156,7 @@ const MediaUploadItem = ({ upload }) => {
       );
     case 'audio':
       return (
-        <div style={{ gridColumn: gridColumnSpan }}>
+        <div style={{ gridColumn: gridColumnSpan }} >
           <Rows spacing='1u'>
             <AudioContextProvider>
               <DraggableAudio
@@ -144,7 +164,10 @@ const MediaUploadItem = ({ upload }) => {
                 title={upload.title}
                 durationMs={upload.durationMs}
                 previewUrl={`${ORGINAL_S3BUCKET_URL}/${getOrginalKeyFromFileKey(upload.key)}`}
-                style={{ width: '100px', height: '100px', maxWidth: '130px', objectFit: 'scale-down', justifyContent: 'center', alignItems: 'center'}}
+                style={{ 
+                  width: originalWidth ? `${originalWidth}px` : '100px',
+                  height: originalHeight ? `${originalHeight}px` : '100px',
+                  maxWidth: '130px', objectFit: 'scale-down', justifyContent: 'center', alignItems: 'center'}}
               />
             </AudioContextProvider>
           </Rows>
@@ -159,9 +182,7 @@ const MediaUploadList = ({ uploads }) => {
   return (
     <Grid columns={3} spacing="1.5u">
       {uploads.map((upload) => (
-        <div key={upload._id}>
-          <MediaUploadItem upload={upload} />
-        </div>
+        <MediaUploadItem upload={upload} key={upload._id}/>
       ))}
     </Grid>
   );

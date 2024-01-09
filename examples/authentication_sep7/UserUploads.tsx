@@ -120,11 +120,11 @@ const UserUploads = () => {
               onChange={handleSearchChange}
           />
           
-          <Grid columns={4} spacing="1.5u">
-            <Button onClick={() => setActiveTab('all')}   variant={getButtonVariant('all')}>All</Button>
-            <Button onClick={() => setActiveTab('image')} variant={getButtonVariant('image')}>Images</Button>
-            <Button onClick={() => setActiveTab('video')} variant={getButtonVariant('video')}>Videos</Button>
-            <Button onClick={() => setActiveTab('audio')} variant={getButtonVariant('audio')}>Audios</Button>
+          <Grid columns={4} spacing="1u">
+            <Button onClick={() => setActiveTab('all')} variant={getButtonVariant('all')} children='All'/>
+            <Button onClick={() => setActiveTab('image')} variant={getButtonVariant('image')} children='Images'/>
+            <Button onClick={() => setActiveTab('video')} variant={getButtonVariant('video')} children='Videos'/>
+            <Button onClick={() => setActiveTab('audio')} variant={getButtonVariant('audio')} children='Audios'/>
           </Grid>
 
           <MediaUploadList uploads={filteredUploads} />
