@@ -32,6 +32,7 @@ const UserUploads = () => {
   const [uploads, setUploads] = useState([]);
   const [searchTerm, setSearchTerm] = useState(''); // State to store the search term
   const [activeTab, setActiveTab] = useState('all'); // New state for active tab
+  const [error, setError] = useState(null); // State to store the error
 
   useEffect(() => {
     const fetchData = async () => {
@@ -48,7 +49,13 @@ const UserUploads = () => {
         });
   
         if (!response.ok) {
-          throw new Error('Network response was not ok');
+          if (response.status === 401) {
+            setError("You are not authorized to fetch and export data. Please contact your administrator for access.");
+          } else {
+            throw new Error('Network response was not ok');
+          }
+        } else {
+          setError(null); // Reset error state if the request is successful
         }
 
         const data = await response.json();
@@ -127,7 +134,11 @@ const UserUploads = () => {
             <Button onClick={() => setActiveTab('audio')} variant={getButtonVariant('audio')} children='Audios'/>
           </Grid>
 
+          {error ? (
+          <Text color="error">{error}</Text>
+        ) : (
           <MediaUploadList uploads={filteredUploads} />
+        )}
       </Rows>
     </div>
   );
