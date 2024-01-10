@@ -5,6 +5,9 @@ import React, { useState } from "react";
 import styles from "styles/components.css";
 import UserUploads from "./UserUploads";
 import { requestExport, ExportResponse } from "@canva/design";
+import translationsEn from './translations/en';
+import translationsDe from './translations/de';
+
 type State = "authenticated" | "not_authenticated" | "checking" | "error";
 
 /**
@@ -54,6 +57,10 @@ export const App = () => {
   const [state, setState] = React.useState<State>("checking");
   const [exportState, setExportState] = useState<"exporting" | "idle">("idle");
   const [exportResponse, setExportResponse] = useState<ExportResponse | undefined>();
+
+  // Determine the browser language and set the appropriate translations
+  const browserLanguage = navigator.language.startsWith('de') ? 'de' : 'en';
+  const translations = browserLanguage === 'de' ? translationsDe : translationsEn;
 
   React.useEffect(() => {
     checkAuthenticationStatus(auth).then((status) => {
@@ -178,35 +185,33 @@ export const App = () => {
     <div className={styles.scrollContainer}>
       <Rows spacing="3u">
         <Box>
-          <Text alignment="center">{createAuthenticationMessage(state)}</Text>
+          <Text alignment="center">{createAuthenticationMessage(state, translations)}</Text>
         </Box>
 
         {state !== "authenticated" && (
           <Button variant="primary" onClick={startAuthenticationFlow} disabled={state === "checking"} stretch>
-            Start connecting to Sep7
+            {translations.startConnecting}
           </Button>
         )}
         
         {state !== "authenticated" && (
           <Text>
-            If you are not authenticated, it means that you have not connected your Sep7 account with Canva. 
-            Please click the button to proceed with the login/acceptance of the connection process.
+            {translations.authExplanation}
           </Text>
         )}
 
         {state === "authenticated" && (
           <>
             <Button variant="primary" onClick={exportDocument} loading={exportState === "exporting"} stretch>
-              Export
+              {translations.export}
             </Button>
-
             <UserUploads/>
           </>
         )}
 
         {state == "authenticated" && (
           <Button variant="secondary" onClick={removeUserConnectionSep7} stretch>
-            Unlink Sep7 Account
+            {translations.unlink}
           </Button>
         )}
       </Rows>
@@ -214,13 +219,13 @@ export const App = () => {
   );
 };
 
-const createAuthenticationMessage = (state: State) => {
+const createAuthenticationMessage = (state: State, translations) => {
   switch (state) {
     case "checking":
-      return "Checking authentication status...";
+      return translations.checkingAuthStatus;
     case "authenticated":
-      return "You are authenticated!";
+      return translations.authenticated;
     case "not_authenticated":
-      return "You are not authenticated.";
+      return translations.notAuthenticated;
   }
 };

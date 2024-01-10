@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { auth } from "@canva/user";
 import { Button, Grid, Rows, Text, TextInput, Title } from "@canva/app-ui-kit";
 import MediaUploadList from './MediaUploadList';
+import translationsEn from './translations/en';
+import translationsDe from './translations/de';
 
 const getOrginalKeyFromFileKey = (key) => {
   const index_slash = key.lastIndexOf('/');
@@ -34,9 +36,14 @@ const UserUploads = () => {
   const [activeTab, setActiveTab] = useState('all'); // New state for active tab
   const [error, setError] = useState(null); // State to store the error
 
+  // Determine the browser language and set the appropriate translations
+  const browserLanguage = navigator.language.startsWith('de') ? 'de' : 'en';
+  const translations = browserLanguage === 'de' ? translationsDe : translationsEn;
+
+
   useEffect(() => {
     const fetchData = async () => {
-      try {
+      try {    
         const token = await auth.getCanvaUserToken();
         const response = await fetch(`${BACKEND_HOST}/api/user/uploads`, {
           method: 'POST',
@@ -50,7 +57,7 @@ const UserUploads = () => {
   
         if (!response.ok) {
           if (response.status === 401) {
-            setError("You are not authorized to fetch and export data. Please contact your administrator for access.");
+            setError(translations.featureError);
           } else {
             throw new Error('Network response was not ok');
           }
@@ -119,19 +126,19 @@ const UserUploads = () => {
 
   return (
     <div>
-      <Title size='large'>User Uploads</Title>
+      <Title size='large'>{translations.userUploads}</Title>
       <Rows spacing="2u">        
           <TextInput 
-              placeholder="Search..."
+              placeholder={translations.search}
               value={searchTerm}
               onChange={handleSearchChange}
           />
           
           <Grid columns={4} spacing="1u">
-            <Button onClick={() => setActiveTab('all')} variant={getButtonVariant('all')} children='All'/>
-            <Button onClick={() => setActiveTab('image')} variant={getButtonVariant('image')} children='Images'/>
-            <Button onClick={() => setActiveTab('video')} variant={getButtonVariant('video')} children='Videos'/>
-            <Button onClick={() => setActiveTab('audio')} variant={getButtonVariant('audio')} children='Audios'/>
+            <Button onClick={() => setActiveTab('all')} variant={getButtonVariant('all')} children={translations.all}/>
+            <Button onClick={() => setActiveTab('image')} variant={getButtonVariant('image')} children={translations.images}/>
+            <Button onClick={() => setActiveTab('video')} variant={getButtonVariant('video')} children={translations.videos}/>
+            <Button onClick={() => setActiveTab('audio')} variant={getButtonVariant('audio')} children={translations.audios}/>
           </Grid>
 
           {error ? (

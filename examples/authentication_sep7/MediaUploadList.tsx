@@ -82,13 +82,13 @@ const uploadAudio = async (uploadData) => {
 };
 
 const insertExternalImage = async (upload) => {
-  if (upload.type.startsWith('image/')) {
+  if (upload.type.startsWith('image/png') && upload.type.startsWith('image/jpg') && upload.type.startsWith('image/jpeg')) {
     const { ref } = await uploadImage(upload);
 
     addNativeElement({ type: "IMAGE", ref });
   } 
 
-  if (upload.type.startsWith('video/')) {
+  if (upload.type.startsWith('video/') && upload.type.startsWith('image/gif')) {
     const { ref } = await uploadVideo(upload);
 
     addNativeElement({ type: "VIDEO", ref });
@@ -113,14 +113,16 @@ const MediaUploadItem = ({ upload }) => {
   };
 
   React.useEffect(() => {
-    if (upload.type.startsWith('image')) {
+    if (upload.type.startsWith('image/png') && upload.type.startsWith('image/jpeg')) {
       fetchImageDimensions();
     }
   }, [upload.type, upload.key]);
 
   // Determines how to render each upload based on its type
-  switch (upload.type.split('/')[0]) {
-    case 'image':
+  switch (upload.type.split('/')[1]) {
+    case 'png':
+    case 'jpg':
+    case 'jpeg':
       return (
         <div style={{ gridColumn: gridColumnSpan }} >
           <Rows spacing='1u'>
@@ -133,9 +135,9 @@ const MediaUploadItem = ({ upload }) => {
             <span style={{ width: '100%', color: 'white', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden'}}>{upload.title}</span>
           </Rows>
         </div>
-
       );
-    case 'video':
+    case 'gif':
+    case 'mp4':
       return (
         <div style={{ gridColumn: gridColumnSpan }} >
           <Rows spacing='1u'>
@@ -154,7 +156,8 @@ const MediaUploadItem = ({ upload }) => {
           </Rows>
         </div>
       );
-    case 'audio':
+    case 'mpeg':
+    case 'mp3':
       return (
         <div style={{ gridColumn: gridColumnSpan }} >
           <Rows spacing='1u'>
@@ -172,10 +175,10 @@ const MediaUploadItem = ({ upload }) => {
             </AudioContextProvider>
           </Rows>
         </div>
-      );
+    );
     default:
       return null;
-  }
+    }
 };
 
 const MediaUploadList = ({ uploads }) => {
