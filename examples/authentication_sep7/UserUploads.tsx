@@ -115,8 +115,8 @@ const UserUploads = () => {
     return activeTab === 'all' ? sortUploadsByType(uploads) : filterUploadsByType(activeTab);
   };
 
-  const filteredUploads = getUploads().filter(upload => 
-    upload.title.toLowerCase().includes(searchTerm)
+  const filteredUploads = getUploads().filter((upload) => 
+    (upload.title?.toLowerCase() ?? "").includes(searchTerm)
   );
 
   const getButtonVariant = (tabName) => {
